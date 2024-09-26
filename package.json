@@ -1,0 +1,31 @@
+{
+  "name": "morpho-liquidation-liquidity-checker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon -r dotenv/config src/index.ts",
+    "run": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@morpho-org/blue-api-sdk": "1.0.0-integ-650.0",
+    "@morpho-org/blue-sdk": "1.0.0-integ-650.0",
+    "@morpho-org/blue-sdk-ethers": "1.0.0-integ-650.0",
+    "@morpho-org/blue-sdk-ethers-liquidation": "1.0.0-integ-650.0",
+    "@morpho-org/morpho-ts": "1.0.0-integ-650.0",
+    "@paraswap/sdk": "^6.10.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@genql/cli": "^6.3.3",
+    "@tsconfig/node20": "^20.1.4",
+    "@types/node": "^22.7.2",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}
