@@ -1,8 +1,10 @@
 import { Asset, Chain, createClient, MarketState } from "../morpho-gql"
 import { config } from "../config"
-import { MarketUtils } from "@morpho-org/blue-sdk"
+import { ChainId, MarketUtils } from "@morpho-org/blue-sdk"
 import { getParaswapSwap } from "../dex/paraswap"
 import { get1InchSwap } from "../dex/1inch"
+import { getPendleSwapCallData, pendleMarkets } from "@morpho-org/blue-sdk-ethers-liquidation"
+import { getPendleSwap } from "../dex/pendle"
 
 export type MarketData = {
   id: string
@@ -18,6 +20,17 @@ export type MarketData = {
   collateralAsset: Pick<Asset, "id" | "address" | "symbol" | "decimals" | "name"> & {
     chain: Pick<Chain, "id">
   }
+}
+
+export type MarketLiquidity = {
+  loanAsset: string
+  collateralAsset: string
+  totalLoanAsset: bigint
+  totalLoanAssetUsd: number
+  totalCollateralAsset: bigint
+  totalCollateralAssetUsd: number
+  totalRecoverableLoanAsset: bigint
+  recoverableRatio: number
 }
 
 export async function getMarkets() {
@@ -68,16 +81,25 @@ export async function getMarkets() {
 }
 
 export async function handleMarket(market: MarketData) {
-  await getMarketDexLiquidity(market)
+  return await getMarketDexLiquidity(market)
 }
 
-export async function getMarketDexLiquidity(market: MarketData) {
+export async function getMarketDexLiquidity(market: MarketData): Promise<MarketLiquidity> {
   let liquidity = BigInt(market.state.collateralAssets)
-  let supply = BigInt(market.state.supplyAssets) / 2n
+  let src = market.collateralAsset.address
+  if (market.collateralAsset.symbol.startsWith("PT-")) {
+    const swap = await getPendleSwap(
+      market.collateralAsset.chain.id === ChainId.EthMainnet ? ChainId.EthMainnet : ChainId.BaseMainnet,
+      market.collateralAsset.address,
+      liquidity.toString()
+    )
+    liquidity = swap.success ? swap.destAmount : 0n
+    src = swap.underlying
+  }
   const swaps = await Promise.all([
     await get1InchSwap({
       chainId: market.loanAsset.chain.id,
-      src: market.collateralAsset.address,
+      src: src,
       dst: market.loanAsset.address,
       amount: liquidity,
       from: config.executorAddress,
@@ -91,7 +113,7 @@ export async function getMarketDexLiquidity(market: MarketData) {
     }),
     await getParaswapSwap({
       chainId: market.loanAsset.chain.id,
-      src: market.collateralAsset.address,
+      src: src,
       dst: market.loanAsset.address,
       amount: liquidity,
       from: config.executorAddress,
@@ -106,10 +128,22 @@ export async function getMarketDexLiquidity(market: MarketData) {
       destDecimals: market.loanAsset.decimals,
     }),
   ])
-  if (((swaps[0].success || swaps[1].success) && swaps[0].destAmount > supply) || swaps[1].destAmount > supply) {
-    console.log(`Market ${market.loanAsset.symbol}-${market.collateralAsset.symbol} - ✅ Liquidity OK`)
-  } else {
-    console.log(`Market ${market.loanAsset.symbol}-${market.collateralAsset.symbol} - ❌ Liquidity KO`)
+
+  const maxRecoverableLoanAsset = swaps[0].destAmount > swaps[1].destAmount ? swaps[0].destAmount : swaps[1].destAmount
+  const recoverableRatio =
+    market.state.supplyAssets > 0 ? Number(Number(maxRecoverableLoanAsset) / Number(market.state.supplyAssets)) : 0
+  console.log(
+    `Market ${market.loanAsset.symbol}-${market.collateralAsset.symbol} - DEX Liquidity ratio = ${recoverableRatio}`
+  )
+  return {
+    loanAsset: market.loanAsset.symbol,
+    collateralAsset: market.collateralAsset.symbol,
+    totalLoanAsset: BigInt(market.state.supplyAssets),
+    totalLoanAssetUsd: market.state!.supplyAssetsUsd!,
+    totalCollateralAsset: BigInt(market.state.collateralAssets),
+    totalCollateralAssetUsd: market.state!.collateralAssetsUsd!,
+    totalRecoverableLoanAsset: maxRecoverableLoanAsset,
+    recoverableRatio: recoverableRatio,
   }
 }
 
