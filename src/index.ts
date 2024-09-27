@@ -20,8 +20,10 @@ async function main() {
     return
   }
   const marketLiquidities: MarketLiquidity[] = []
+
   for (const market of markets) {
     if (market.collateralAsset) {
+      console.log(`Handling market ${market.loanAsset.symbol}-${market.collateralAsset.symbol}`)
       const liquidity = await handleMarket(market)
       marketLiquidities.push(liquidity)
     }
