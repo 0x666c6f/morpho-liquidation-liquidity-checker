@@ -100,7 +100,7 @@ export async function getMarketDexLiquidity(market: MarketData): Promise<MarketL
   if (market.collateralAsset.symbol === "USD0USD0++") {
     const amount = await getUSD0USD0PlusPlusWitdhrawal(liquidity)
     liquidity = amount
-    src = "0x35D8949372D46B7a3D5A56006AE77B215fc69bC0" //USD0++
+    src = "0x73A15FeD60Bf67631dC6cd7Bc5B6e8da8190aCF5" //USD0
   }
   const swaps = await Promise.all([
     await get1InchSwap({
