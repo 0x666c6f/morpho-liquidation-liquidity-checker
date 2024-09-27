@@ -30,7 +30,7 @@ export async function get1InchSwap(
 
         if (data.description?.includes("insufficient liquidity")) {
           console.log(`1Inch - Trying again with a lower amount: `, swapParams.amount)
-          swapParams.amount = (BigInt(swapParams.amount) * 9n) / 10n
+          swapParams.amount = BigInt(swapParams.amount) / 2n
           return await get1InchSwap(swapParams)
         }
 
@@ -50,17 +50,6 @@ export async function get1InchSwap(
       }
     } catch (error) {
       console.log(`➡ 1inch error: ${error}`)
-
-      if (attempt === MAX_RETRIES - 1) {
-        return {
-          success: false,
-          destAmount: 0n,
-        }
-      }
-
-      const delay = BASE_DELAY * Math.pow(2, attempt)
-      console.log(`Error occurred. Retrying in ${delay}ms...`)
-      await sleep(delay)
     }
   }
 

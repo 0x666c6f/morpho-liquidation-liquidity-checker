@@ -5,6 +5,7 @@ import { getParaswapSwap } from "../dex/paraswap"
 import { get1InchSwap } from "../dex/1inch"
 import { getPendleSwapCallData, pendleMarkets } from "@morpho-org/blue-sdk-ethers-liquidation"
 import { getPendleSwap } from "../dex/pendle"
+import { getUSD0USD0PlusPlusWitdhrawal } from "../dex/curve"
 
 export type MarketData = {
   id: string
@@ -95,6 +96,11 @@ export async function getMarketDexLiquidity(market: MarketData): Promise<MarketL
     )
     liquidity = swap.success ? swap.destAmount : 0n
     src = swap.underlying
+  }
+  if (market.collateralAsset.symbol === "USD0USD0++") {
+    const amount = await getUSD0USD0PlusPlusWitdhrawal(liquidity)
+    liquidity = amount
+    src = "0x35D8949372D46B7a3D5A56006AE77B215fc69bC0" //USD0++
   }
   const swaps = await Promise.all([
     await get1InchSwap({

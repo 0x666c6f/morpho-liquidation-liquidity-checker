@@ -32,12 +32,12 @@ export async function getParaswapSwap(
         error.message.includes("ESTIMATED_LOSS_GREATER_THAN_MAX_IMPACT") ||
         error.message.includes("No routes found with enough liquidity")
       ) {
-        swapParams.amount = (BigInt(swapParams.amount) * 9n) / 10n
+        swapParams.amount = BigInt(swapParams.amount) / 2n
         console.log(`Paraswap - Trying again with a lower amount: `, swapParams.amount)
         return await getParaswapSwap(swapParams)
       }
 
-      if (attempt === MAX_RETRIES - 1) {
+      if (attempt === MAX_RETRIES - 1 || !error.message.includes("Rate limit reached")) {
         return {
           success: false,
           destAmount: 0n,
